@@ -15,7 +15,7 @@ export default function Home() {
   return (
     <>
       <Head>
-        <title>CobaltChat - Application de discussion en temps réel</title>
+        <title>CobaltChat</title>
         <meta name="description" content="Une application de chat en temps réel construite avec Next.js et Firebase" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <link rel="icon" href="/favicon.ico" />
