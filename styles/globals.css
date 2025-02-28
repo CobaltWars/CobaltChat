@@ -13,19 +13,6 @@ body {
   min-height: 100vh;
 }
 
-.chat-container {
-  height: 100vh;
-  width: 100vw;
-  position: fixed;
-  top: 0;
-  left: 0;
-  overflow: hidden;
-}
-
-.messages-area {
-  height: calc(100vh - 180px); // Ajuster selon la taille de votre header/footer
-}
-
 
 /* Scrollbar customization */
 ::-webkit-scrollbar {

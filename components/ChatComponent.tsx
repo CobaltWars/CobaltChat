@@ -280,7 +280,7 @@ const ChatComponent: React.FC = () => {
   }
 
   return (
-    <div className="max-w-3xl mx-auto p-4">
+    <div className="fixed inset-0 flex flex-col p-4 bg-gray-50">
       <h1 className="text-3xl font-bold mb-2 text-center text-blue-600">CobaltChat</h1>
       <p className="text-center text-gray-500 mb-4">Version BETA - Des MAJ régulières auront lieu</p>
       
@@ -300,7 +300,7 @@ const ChatComponent: React.FC = () => {
       {/* Messages area */}
       <div 
         ref={messageContainerRef} 
-        className="h-96 overflow-y-auto border rounded-lg p-4 mb-4 bg-gray-50 shadow-inner"
+        className="flex-1 overflow-y-auto border rounded-lg p-4 mb-4 bg-gray-50 shadow-inner"
       >
         {Object.entries(groupedMessages).map(([date, messagesForDay]) => (
           <div key={date} className="mb-4">
