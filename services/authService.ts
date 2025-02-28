@@ -7,15 +7,17 @@ import {
   updateProfile,
   updatePassword,
   onAuthStateChanged,
-  User
+  User,
+  onIdTokenChanged
 } from 'firebase/auth';
-import { getDatabase, ref, set } from 'firebase/database';
+import { getDatabase, ref, set, onDisconnect } from 'firebase/database';
 
 // Types
 export type AuthUser = {
   uid: string;
   username: string;
   email: string;
+  photoURL?: string;
 };
 
 // Firebase config
@@ -30,7 +32,7 @@ const firebaseConfig = {
 };
 
 // Initialize Firebase
-const app = initializeApp(firebaseConfig);
+export const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const database = getDatabase(app);
 
@@ -54,7 +56,12 @@ export const registerUser = async (username: string, password: string): Promise<
       username,
       email,
       createdAt: Date.now(),
+      online: true,
     });
+    
+    // Set online status to false on disconnect
+    const onlineRef = ref(database, `users/${user.uid}/online`);
+    onDisconnect(onlineRef).set(false);
     
     return {
       uid: user.uid,
@@ -83,10 +90,18 @@ export const loginUser = async (username: string, password: string): Promise<Aut
       throw new Error('Profil utilisateur incomplet.');
     }
     
+    // Update online status
+    await updateOnlineStatus(user.uid, true);
+    
+    // Set online status to false on disconnect
+    const onlineRef = ref(database, `users/${user.uid}/online`);
+    onDisconnect(onlineRef).set(false);
+    
     return {
       uid: user.uid,
       username: user.displayName,
       email: user.email || email,
+      photoURL: user.photoURL || undefined
     };
   } catch (error: any) {
     console.error('Error logging in:', error);
@@ -102,6 +117,10 @@ export const loginUser = async (username: string, password: string): Promise<Aut
 // Logout user
 export const logoutUser = async (): Promise<void> => {
   try {
+    const user = auth.currentUser;
+    if (user) {
+      await updateOnlineStatus(user.uid, false);
+    }
     await signOut(auth);
   } catch (error) {
     console.error('Error signing out:', error);
@@ -119,6 +138,7 @@ export const getCurrentUser = (): Promise<AuthUser | null> => {
           uid: user.uid,
           username: user.displayName,
           email: user.email || `${user.displayName.toLowerCase()}@cobaltchat.app`,
+          photoURL: user.photoURL || undefined
         });
       } else {
         resolve(null);
@@ -135,6 +155,7 @@ export const onAuthStateChange = (callback: (user: AuthUser | null) => void): ()
         uid: user.uid,
         username: user.displayName,
         email: user.email || `${user.displayName.toLowerCase()}@cobaltchat.app`,
+        photoURL: user.photoURL || undefined
       });
     } else {
       callback(null);
@@ -142,7 +163,7 @@ export const onAuthStateChange = (callback: (user: AuthUser | null) => void): ()
   });
 };
 
-// update password
+// Change password
 export const changePassword = async (newPassword: string): Promise<void> => {
   try {
     const user = auth.currentUser;
@@ -151,7 +172,36 @@ export const changePassword = async (newPassword: string): Promise<void> => {
     await updatePassword(user, newPassword);
   } catch (error: any) {
     console.error('Error changing password:', error);
+    if (error.code === 'auth/requires-recent-login') {
+      throw new Error('Pour des raisons de sécurité, veuillez vous reconnecter avant de changer votre mot de passe.');
+    }
     throw new Error('Erreur lors du changement de mot de passe. Veuillez réessayer.');
+  }
+};
+
+// Update profile picture
+export const updateProfilePicture = async (photoURL: string): Promise<void> => {
+  try {
+    const user = auth.currentUser;
+    if (!user) throw new Error('Utilisateur non connecté');
+    
+    await updateProfile(user, { photoURL });
+    
+    // Update in database as well
+    await set(ref(database, `users/${user.uid}/photoURL`), photoURL);
+  } catch (error) {
+    console.error('Error updating profile picture:', error);
+    throw new Error('Erreur lors de la mise à jour de la photo de profil.');
+  }
+};
+
+// Update online status
+export const updateOnlineStatus = async (userId: string, status: boolean): Promise<void> => {
+  try {
+    const userStatusRef = ref(database, `users/${userId}/online`);
+    await set(userStatusRef, status);
+  } catch (error) {
+    console.error('Error updating online status:', error);
   }
 };
 
@@ -161,4 +211,7 @@ export default {
   logoutUser,
   getCurrentUser,
   onAuthStateChange,
+  changePassword,
+  updateProfilePicture,
+  updateOnlineStatus
 };
