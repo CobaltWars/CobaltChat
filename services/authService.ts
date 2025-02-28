@@ -5,6 +5,7 @@ import {
   signInWithEmailAndPassword,
   signOut,
   updateProfile,
+  updatePassword,
   onAuthStateChanged,
   User
 } from 'firebase/auth';
@@ -139,6 +140,19 @@ export const onAuthStateChange = (callback: (user: AuthUser | null) => void): ()
       callback(null);
     }
   });
+};
+
+// update password
+export const changePassword = async (newPassword: string): Promise<void> => {
+  try {
+    const user = auth.currentUser;
+    if (!user) throw new Error('Utilisateur non connecté');
+    
+    await updatePassword(user, newPassword);
+  } catch (error: any) {
+    console.error('Error changing password:', error);
+    throw new Error('Erreur lors du changement de mot de passe. Veuillez réessayer.');
+  }
 };
 
 export default {
